@@ -1,0 +1,383 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Section Booking Planner</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap">
+<style>
+/* layout: toolbar over one view at a time: day board (sections x hours), month grid, year at a glance, list */
+:root{--bg:#f3f6f7;--panel:#fff;--fg:#14232b;--mute:#586b74;--line:#d5dfe3;--accent:#0f6e7c;--on:#fff;--warn:#a83a12;
+--c0:#1f6fb2;--c1:#2c7d4f;--c2:#8a4fb0;--c3:#b45a12;--c4:#b02f55;--c5:#4b57b8;--c6:#6d6a12;--c7:#51666f;
+--disp:'Space Grotesk',system-ui,sans-serif;--body:Inter,system-ui,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f191e;--panel:#17252b;--fg:#e4eef1;--mute:#98adb5;--line:#2c4048;--accent:#52bccb;--on:#06222a;--warn:#ff9a73;
+--c0:#6fb4ee;--c1:#6cc794;--c2:#c795ea;--c3:#f0a05c;--c4:#f2809f;--c5:#99a4f5;--c6:#cdc75a;--c7:#9fb6c0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f191e;--panel:#17252b;--fg:#e4eef1;--mute:#98adb5;--line:#2c4048;--accent:#52bccb;--on:#06222a;--warn:#ff9a73;
+--c0:#6fb4ee;--c1:#6cc794;--c2:#c795ea;--c3:#f0a05c;--c4:#f2809f;--c5:#99a4f5;--c6:#cdc75a;--c7:#9fb6c0;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);line-height:1.45}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px;max-width:1240px;margin:auto}
+h1,h2,h3{font-family:var(--disp);margin:0;text-wrap:balance}h1{font-size:1.6rem}h2{font-size:1.15rem}h3{font-size:.95rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.grow{flex:1}
+button,input,select,textarea{font:inherit;color:var(--fg);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 11px}
+button{cursor:pointer}button:hover{border-color:var(--accent)}button:disabled{opacity:.45;cursor:default}
+.primary{background:var(--accent);color:var(--on);border-color:var(--accent);font-weight:600}
+.danger{color:var(--warn)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.bar{margin-block:14px 10px}
+.notice{border:1px solid var(--warn);color:var(--warn);border-radius:6px;padding:9px 12px;margin-top:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.scroll{overflow-x:auto}
+.mute{color:var(--mute);font-size:.88rem}
+.chip{display:inline-flex;gap:6px;align-items:center;border-radius:99px;font-size:.85rem;padding:4px 11px}
+.chip i{width:10px;height:10px;border-radius:3px;background:var(--c)}
+.chip[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
+/* day board */
+.board{min-width:900px}.track-row{display:grid;grid-template-columns:150px 1fr;border-top:1px solid var(--line)}
+.track-row:first-child{border-top:0}
+.sname{padding:10px 12px;font-weight:600;border-right:1px solid var(--line);overflow-wrap:anywhere;position:sticky;left:0;background:var(--panel);z-index:2;border-left:5px solid var(--c)}
+.track{position:relative;min-height:56px;cursor:copy}
+.hours{position:relative;height:28px}.hours span{position:absolute;top:6px;font-size:.75rem;color:var(--mute);padding-left:3px;font-variant-numeric:tabular-nums}
+.grid-line{position:absolute;top:0;bottom:0;border-left:1px solid var(--line);pointer-events:none}
+.ev{--c:var(--accent);text-align:left;background:color-mix(in srgb,var(--c) 17%,var(--panel));border:1px solid var(--c);border-radius:5px;padding:3px 7px;font-size:.8rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.track .ev{position:absolute;height:46px;line-height:1.35}
+.ev.prov{border-style:dashed;background:var(--panel)}
+.ev.clash{outline:2px solid var(--warn)}
+/* month */
+.month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));min-width:700px}
+.dow{padding:6px 8px;font-size:.75rem;color:var(--mute);font-weight:600}
+.cell{border-top:1px solid var(--line);border-left:1px solid var(--line);min-height:104px;padding:5px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cell.out{opacity:.4}.num{border:0;background:none;padding:0 5px;align-self:flex-start;font-weight:600;font-variant-numeric:tabular-nums}
+.today .num,.mini .today{background:var(--accent);color:var(--on)}
+.more{border:0;background:none;font-size:.78rem;color:var(--mute);padding:0;text-align:left}
+/* year */
+.year{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.mini{padding:12px}.mini .g{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:8px;text-align:center;font-size:.75rem}
+.mini button{padding:3px 0;border:1px solid transparent;border-radius:4px;background:none;font-variant-numeric:tabular-nums}
+.mini .l1{background:color-mix(in srgb,var(--accent) 18%,var(--panel))}.mini .l2{background:color-mix(in srgb,var(--accent) 34%,var(--panel))}.mini .l3{background:color-mix(in srgb,var(--accent) 52%,var(--panel))}
+/* list */
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:.9rem}th,td{text-align:left;padding:8px 12px;border-top:1px solid var(--line);vertical-align:top}th{border-top:0;color:var(--mute);font-size:.78rem}
+td.t{font-variant-numeric:tabular-nums;white-space:nowrap}
+dialog{background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:10px;width:min(520px,calc(100% - 24px));padding:18px;max-height:90%;overflow:auto}
+dialog::backdrop{background:rgb(0 0 0/.5)}
+form.f{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+form.f label{display:flex;flex-direction:column;gap:4px;font-size:.82rem;font-weight:600;min-width:0}
+form.f input,form.f select,form.f textarea{width:100%;box-sizing:border-box;font-weight:400}
+.wide{grid-column:1/-1}.err{color:var(--warn);font-size:.9rem;white-space:pre-line}
+@media (max-width:500px){form.f{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+  <div class="row"><h1>Section Booking Planner</h1><span class="grow"></span>
+    <span class="mute" id="sync" role="status">Connecting…</span>
+    <button id="sectionsBtn">Sections</button><button id="exportBtn" hidden>Export CSV</button><button class="primary" id="newBtn" disabled>New booking</button></div>
+  <div class="notice" id="notice" hidden></div>
+  <div class="row bar">
+    <div class="row seg" id="views"></div><span class="grow"></span>
+    <button id="prev" aria-label="Previous">‹</button><button id="todayBtn">Today</button><button id="next" aria-label="Next">›</button>
+    <input type="date" id="jump" aria-label="Go to date">
+  </div>
+  <div class="row" id="filters"></div>
+  <div class="row bar"><h2 id="heading"></h2><span class="grow"></span><input id="search" type="search" placeholder="Search title, person or notes" hidden></div>
+  <main id="view"></main>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlgTitle">
+  <h2 id="dlgTitle">Booking</h2><div class="mute" id="meta"></div>
+  <form class="f" id="form" novalidate>
+    <label class="wide">Event title<input id="fTitle" maxlength="100"></label>
+    <label>Section<select id="fSection"></select></label>
+    <label>Date<input type="date" id="fDate"></label>
+    <label>Start<input type="time" id="fStart" step="300"></label>
+    <label>End<input type="time" id="fEnd" step="300"></label>
+    <label>Booked for<input id="fWho" maxlength="80" placeholder="Person or team"></label>
+    <label>Status<select id="fStatus"><option value="confirmed">Confirmed</option><option value="provisional">Provisional (forward plan)</option></select></label>
+    <label class="wide">Notes<textarea id="fNotes" rows="2" maxlength="500"></textarea></label>
+    <label id="repWrap">Repeat<select id="fRepeat"><option value="">Does not repeat</option><option value="daily">Every day</option><option value="weekdays">Monday to Friday</option><option value="weekly">Every week</option><option value="fortnightly">Every 2 weeks</option><option value="monthly">Every 4 weeks</option></select></label>
+    <label id="untilWrap" hidden>Repeat until<input type="date" id="fUntil"></label>
+    <label class="wide" id="scopeWrap" hidden>Apply changes or deletion to<select id="fScope"><option value="one">This date only</option><option value="forward">This and all later dates in the series</option></select></label>
+    <div class="wide err" id="err" role="alert"></div>
+    <div class="wide row"><button type="button" class="danger" id="delBtn">Delete</button><button type="button" id="dupBtn">Copy</button><span class="grow"></span><button type="button" id="cancelBtn">Close</button><button class="primary" id="saveBtn">Save booking</button></div>
+  </form>
+</dialog>
+
+<dialog id="sdlg" aria-labelledby="sTitle">
+  <h2 id="sTitle">Sections</h2><p class="mute">Rooms, areas, teams or resources that can be booked. Changes apply for everyone. A hidden section keeps its bookings.</p>
+  <div id="slist"></div>
+  <form class="row" id="addForm" style="margin-top:12px"><input id="newSection" class="grow" maxlength="40" placeholder="New section name" aria-label="New section name"><button>Add section</button></form>
+  <div class="err" id="serr" role="alert"></div>
+  <div class="row" style="margin-top:14px"><span class="grow"></span><button id="sclose">Done</button></div>
+</dialog>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+function el(tag,props={},...kids){const n=document.createElement(tag);for(const[k,v]of Object.entries(props)){if(k==="class")n.className=v;else if(k==="style")n.style.cssText=v;else if(k.startsWith("aria"))n.setAttribute(k.replace("aria","aria-").toLowerCase(),v);else n[k]=v}n.append(...kids);return n}
+const pad=n=>String(n).padStart(2,"0");
+const D=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(Date.UTC(y,m-1,d))};
+const iso=d=>d.toISOString().slice(0,10);
+const add=(s,n)=>{const d=D(s);d.setUTCDate(d.getUTCDate()+n);return iso(d)};
+const addMonths=(s,n)=>{const d=D(s);return iso(new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+n,1)))};
+const fmt=(s,o)=>D(s).toLocaleDateString("en-GB",{...o,timeZone:"UTC"});
+const mins=t=>+t.slice(0,2)*60+ +t.slice(3,5);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const now=new Date();
+const TODAY=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+/* window: previous month through 13 months ahead, which keeps the one live query under 1000 day records */
+const MIN=addMonths(TODAY,-1), MAX=add(addMonths(TODAY,14),-1);
+const clampDate=s=>s<MIN?MIN:s>MAX?MAX:s;
+const DEFAULTS={s1:{name:"Section 1",order:1},s2:{name:"Section 2",order:2},s3:{name:"Section 3",order:3},s4:{name:"Section 4",order:4}};
+
+let db=null,userApi=null,me=null,canWrite=false,busy=false;
+let days={},secDoc=null,ready={days:false,secs:false};
+let view="day",cur=TODAY,hidden=new Set(),editing=null;
+try{const v=localStorage.getItem("view");if(["day","month","year","list"].includes(v))view=v}catch(e){}
+
+const sections=()=>Object.entries({...DEFAULTS,...(secDoc||{})}).map(([id,s])=>({id,...s})).sort((a,b)=>a.order-b.order);
+const activeSections=()=>sections().filter(s=>!s.hidden);
+const shown=()=>activeSections().filter(s=>!hidden.has(s.id));
+const colour=s=>`var(--c${(s.order-1)%8})`;
+const secById=id=>sections().find(s=>s.id===id)||{id,name:"Unknown section",order:8};
+const itemsOn=date=>Object.entries(days[date]?.items||{}).filter(([,b])=>b).map(([id,b])=>({...b,id,date})).sort((a,b)=>a.start.localeCompare(b.start));
+const visibleOn=date=>{const ok=new Set(shown().map(s=>s.id));return itemsOn(date).filter(b=>ok.has(b.section))};
+const allItems=()=>Object.keys(days).sort().flatMap(itemsOn);
+const overlaps=(a,b)=>a.section===b.section&&a.start<b.end&&b.start<a.end;
+const isClash=(b,list)=>list.some(o=>o.id!==b.id&&overlaps(o,b));
+
+/* ---------- storage ---------- */
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+async function retry(fn){for(let i=0;;i++){try{return await fn()}catch(e){if(i>=4||!["unavailable","resource_exhausted"].includes(e.code))throw e;await wait(700*2**i+Math.random()*300)}}}
+/* Merge only the changed bookings into a day, so people editing different bookings on the same day don't overwrite each other. */
+async function writeDay(date,patch){
+  const ref=db.doc("days/"+date);
+  for(let i=0;i<6;i++){
+    if((await retry(()=>ref.get())).exists){await retry(()=>ref.update({items:patch}));return}
+    const lease=await retry(()=>ref.acquire({holder:holder,ttlMs:4000}));
+    if(lease.acquired){
+      const s=await retry(()=>ref.get());
+      if(s.exists&&s.data().items)await retry(()=>ref.update({items:patch}));
+      else await retry(()=>ref.set({date,items:patch}));
+      return}
+    await wait(800+Math.random()*600);
+  }
+  throw{code:"unavailable"};
+}
+const holder=uid();
+async function freshDay(date){const s=await retry(()=>db.doc("days/"+date).get());return Object.entries(s.exists&&s.data().items||{}).filter(([,b])=>b).map(([id,b])=>({...b,id,date}))}
+const explain=e=>e&&e.code==="quota_exceeded"?"The calendar's storage is full. Delete old bookings and try again.":e&&["invalid_argument","not_granted","revoked"].includes(e.code)?"The change was refused. You may only have view access; ask the calendar owner.":"The change couldn't be saved. Check your connection and try again.";
+
+/* ---------- rendering ---------- */
+function render(){
+  if(!ready.days||!ready.secs){$("view").replaceChildren(el("p",{class:"mute"},"Loading bookings…"));}
+  $("views").replaceChildren(...[["day","Day"],["month","Month"],["year","Year ahead"],["list","List"]].map(([k,l])=>el("button",{ariaPressed:String(view===k),onclick:()=>{view=k;try{localStorage.setItem("view",k)}catch(e){}render()}},l)));
+  $("filters").replaceChildren(...activeSections().map(s=>el("button",{class:"chip",style:`--c:${colour(s)}`,ariaPressed:String(!hidden.has(s.id)),onclick:()=>{hidden.has(s.id)?hidden.delete(s.id):hidden.add(s.id);render()}},el("i"),s.name)));
+  $("newBtn").disabled=!(canWrite&&ready.days&&ready.secs&&activeSections().length);
+  $("search").hidden=view!=="list";
+  const nav=view==="day"||view==="month";
+  $("prev").hidden=$("next").hidden=$("todayBtn").hidden=$("jump").hidden=!nav;
+  $("jump").value=cur;$("jump").min=MIN;$("jump").max=MAX;
+  $("prev").disabled=view==="day"?cur<=MIN:addMonths(cur,0)<=MIN;
+  $("next").disabled=view==="day"?cur>=MAX:addMonths(cur,1)>MAX;
+  $("heading").textContent=view==="day"?fmt(cur,{weekday:"long",day:"numeric",month:"long",year:"numeric"}):view==="month"?fmt(cur,{month:"long",year:"numeric"}):view==="year"?"The year ahead":"Bookings from today";
+  if(ready.days&&ready.secs)({day:renderDay,month:renderMonth,year:renderYear,list:renderList})[view]();
+}
+function evButton(b,label,list){
+  const s=secById(b.section),clash=isClash(b,list);
+  const text=`${b.start}–${b.end} ${b.title}, ${s.name}${b.status==="provisional"?", provisional":""}${clash?", clashes with another booking":""}`;
+  return el("button",{class:"ev"+(b.status==="provisional"?" prov":"")+(clash?" clash":""),style:`--c:${colour(s)}`,title:text,ariaLabel:text,onclick:e=>{e.stopPropagation();openBooking(b)}},(clash?"⚠ ":"")+label);
+}
+function renderDay(){
+  const list=visibleOn(cur);
+  const lo=Math.min(7,...list.map(b=>Math.floor(mins(b.start)/60))),hi=Math.max(22,...list.map(b=>Math.ceil(mins(b.end)/60))),span=(hi-lo)*60;
+  const pct=m=>(m-lo*60)/span*100;
+  const lines=()=>Array.from({length:hi-lo-1},(_,i)=>el("div",{class:"grid-line",style:`left:${(i+1)/(hi-lo)*100}%`}));
+  const board=el("div",{class:"board"},el("div",{class:"track-row"},el("div",{class:"sname",style:"--c:transparent"},""),el("div",{class:"hours"},...Array.from({length:hi-lo},(_,i)=>el("span",{style:`left:${i/(hi-lo)*100}%`},pad(lo+i)+":00")))));
+  for(const s of shown()){
+    const mine=list.filter(b=>b.section===s.id),lanes=[];
+    const track=el("div",{class:"track"},...lines());
+    for(const b of mine){let i=lanes.findIndex(end=>end<=b.start);if(i<0)i=lanes.length;lanes[i]=b.end;
+      const n=evButton(b,`${b.start} ${b.title}`,mine);n.style.left=pct(mins(b.start))+"%";n.style.width=Math.max(pct(mins(b.end))-pct(mins(b.start)),2)+"%";n.style.top=(5+i*50)+"px";
+      n.append(el("br"),`${b.end}${b.who?" · "+b.who:""}`);track.append(n)}
+    track.style.height=Math.max(1,lanes.length)*50+6+"px";
+    track.onclick=e=>{if(!canWrite||e.target.closest(".ev"))return;const r=track.getBoundingClientRect();let h=Math.floor(lo+(e.clientX-r.left)/r.width*(hi-lo));h=Math.min(22,Math.max(0,h));openBooking(null,{date:cur,section:s.id,start:pad(h)+":00",end:pad(h+1)+":00"})};
+    board.append(el("div",{class:"track-row"},el("div",{class:"sname",style:`--c:${colour(s)}`},s.name),track));
+  }
+  $("view").replaceChildren(el("div",{class:"panel scroll"},board),el("p",{class:"mute"},(canWrite?"Select empty space to book it, or select a booking to change it. ":"")+"Dashed outline means provisional."));
+}
+function monthDates(first){const start=add(first,-((D(first).getUTCDay()+6)%7)),out=[];for(let i=0;i<42;i++)out.push(add(start,i));if(out[35].slice(0,7)!==first.slice(0,7))out.length=35;return out}
+function renderMonth(){
+  const first=addMonths(cur,0),g=el("div",{class:"month"},..."Mon Tue Wed Thu Fri Sat Sun".split(" ").map(d=>el("div",{class:"dow"},d)));
+  for(const d of monthDates(first)){
+    const inside=d>=MIN&&d<=MAX,list=inside?visibleOn(d):[];
+    const open=()=>{cur=d;view="day";render()};
+    g.append(el("div",{class:"cell"+(d.slice(0,7)!==first.slice(0,7)?" out":"")+(d===TODAY?" today":"")},
+      el("button",{class:"num",disabled:!inside,onclick:open,ariaLabel:"Open "+fmt(d,{day:"numeric",month:"long"})},String(+d.slice(8))),
+      ...list.slice(0,3).map(b=>evButton(b,`${b.start} ${b.title}`,list)),
+      ...(list.length>3?[el("button",{class:"more",onclick:open},`+${list.length-3} more`)]:[])));
+  }
+  $("view").replaceChildren(el("div",{class:"panel scroll"},g));
+}
+function renderYear(){
+  const grid=el("div",{class:"year"});
+  for(let i=0;i<13;i++){
+    const first=addMonths(TODAY,i),g=el("div",{class:"g"},..."MTWTFSS".split("").map(c=>el("span",{class:"mute"},c)));
+    for(let k=(D(first).getUTCDay()+6)%7;k>0;k--)g.append(el("span"));
+    for(let d=first;d.slice(0,7)===first.slice(0,7);d=add(d,1)){
+      const n=visibleOn(d).length,label=`${fmt(d,{day:"numeric",month:"long",year:"numeric"})}: ${n} booking${n===1?"":"s"}`;
+      g.append(el("button",{class:d===TODAY?"today":n>5?"l3":n>2?"l2":n?"l1":"",title:label,ariaLabel:label,onclick:()=>{cur=d;view="day";render()}},String(+d.slice(8))));
+    }
+    grid.append(el("section",{class:"panel mini"},el("h3",{},fmt(first,{month:"long",year:"numeric"})),g));
+  }
+  $("view").replaceChildren(el("p",{class:"mute"},"Darker days have more bookings (1–2, 3–5, 6 or more). Select a day to open it."),grid);
+}
+let listLimit=200;
+function renderList(){
+  const q=$("search").value.trim().toLowerCase(),ok=new Set(shown().map(s=>s.id));
+  const rows=allItems().filter(b=>b.date>=TODAY&&ok.has(b.section)&&(!q||[b.title,b.who,b.notes].join(" ").toLowerCase().includes(q)));
+  if(!rows.length){$("view").replaceChildren(el("p",{class:"panel",style:"padding:20px"},q?"No bookings match your search.":"No upcoming bookings yet. Use New booking to add the first one."));return}
+  const body=el("tbody");
+  for(const b of rows.slice(0,listLimit))body.append(el("tr",{},el("td",{class:"t"},fmt(b.date,{weekday:"short",day:"numeric",month:"short",year:"numeric"})),el("td",{class:"t"},`${b.start}–${b.end}`),el("td",{},evButton(b,b.title,itemsOn(b.date))),el("td",{},secById(b.section).name),el("td",{},b.who||""),el("td",{},b.status==="provisional"?"Provisional":"Confirmed")));
+  const out=[el("div",{class:"panel scroll"},el("table",{},el("thead",{},el("tr",{},...["Date","Time","Event","Section","Booked for","Status"].map(h=>el("th",{},h)))),body))];
+  if(rows.length>listLimit)out.push(el("button",{onclick:()=>{listLimit+=200;render()}},`Show more (${rows.length-listLimit} remaining)`));
+  $("view").replaceChildren(...out);
+}
+
+/* ---------- booking dialog ---------- */
+const FIELDS=["Title","Section","Date","Start","End","Who","Status","Notes","Repeat","Until","Scope"].map(k=>"f"+k);
+function openBooking(b,preset){
+  editing=b?{...b}:null;
+  const v=b||{title:"",section:shown()[0]?.id||activeSections()[0]?.id,date:clampDate(cur<TODAY?TODAY:cur),start:"09:00",end:"10:00",who:"",status:"confirmed",notes:"",...preset};
+  const opts=sections().filter(s=>!s.hidden||s.id===v.section);
+  $("fSection").replaceChildren(...opts.map(s=>el("option",{value:s.id},s.name)));
+  for(const k of ["title","section","date","start","end","who","status","notes"])$("f"+k[0].toUpperCase()+k.slice(1)).value=v[k]||"";
+  $("fDate").min=b&&b.date<MIN?b.date:MIN;$("fDate").max=MAX;$("fUntil").max=MAX;$("fRepeat").value="";$("fUntil").value="";$("fScope").value="one";$("fDate").disabled=false;
+  $("dlgTitle").textContent=!canWrite?"Booking details":b?"Edit booking":"New booking";
+  $("repWrap").hidden=!!b;$("untilWrap").hidden=true;$("scopeWrap").hidden=!(b&&b.series&&canWrite);
+  $("delBtn").hidden=$("dupBtn").hidden=!(b&&canWrite);$("saveBtn").hidden=!canWrite;
+  FIELDS.forEach(f=>$(f).disabled=!canWrite);
+  $("err").textContent="";resetDelete();$("meta").textContent="";
+  if(b&&b.updatedAt){const when=new Date(b.updatedAt).toLocaleString("en-GB",{dateStyle:"medium",timeStyle:"short"});$("meta").textContent="Last changed "+when;
+    if(userApi&&b.updatedBy)userApi.profiles([b.updatedBy]).then(p=>{if(editing&&editing.id===b.id)$("meta").textContent=`Last changed ${when} by ${p[b.updatedBy].name||"another user"}`})}
+  $("dlg").showModal();
+}
+function resetDelete(){$("delBtn").textContent="Delete";delete $("delBtn").dataset.armed}
+function setBusy(on,msg){busy=on;["saveBtn","delBtn","dupBtn","cancelBtn"].forEach(i=>$(i).disabled=on);if(msg!==undefined)$("err").textContent=msg}
+function occurrences(start,rule,until){
+  if(!rule)return[start];const step={daily:1,weekdays:1,weekly:7,fortnightly:14,monthly:28}[rule],out=[];
+  for(let d=start;d<=until;d=add(d,step)){const w=D(d).getUTCDay();if(rule!=="weekdays"||(w>0&&w<6))out.push(d)}
+  return out;
+}
+/* Targets are the edited booking, or it plus every later booking in its series. */
+function targets(){return $("fScope").value==="forward"&&editing.series?allItems().filter(b=>b.series===editing.series&&b.date>=editing.date):[editing]}
+async function unchanged(){const f=(await freshDay(editing.date)).find(x=>x.id===editing.id);return f&&f.updatedAt===editing.updatedAt}
+const STALE="Someone else changed or removed this booking while you had it open. Close it and open it again to see the latest version.";
+
+$("form").onsubmit=async e=>{
+  e.preventDefault();if(busy||!canWrite)return;
+  const v={title:$("fTitle").value.trim(),section:$("fSection").value,start:$("fStart").value.slice(0,5),end:$("fEnd").value.slice(0,5),who:$("fWho").value.trim(),status:$("fStatus").value,notes:$("fNotes").value.trim()};
+  const date=$("fDate").value,rule=editing?"":$("fRepeat").value,until=$("fUntil").value,fail=m=>{$("err").textContent=m};
+  if(!v.title)return fail("Enter an event title.");
+  if(!date||!v.start||!v.end)return fail("Enter a date, start time and end time.");
+  if(v.end<=v.start)return fail("The end time must be after the start time.");
+  if((!editing||date!==editing.date)&&(date<MIN||date>MAX))return fail(`Choose a date between ${fmt(MIN,{dateStyle:"medium"})} and ${fmt(MAX,{dateStyle:"medium"})}.`);
+  if(rule&&(!until||until<date||until>MAX))return fail(`Choose a "repeat until" date from the first date up to ${fmt(MAX,{dateStyle:"medium"})}.`);
+  setBusy(true,"Checking for clashes…");
+  try{
+    let plan;
+    if(editing){
+      if(!await unchanged()){setBusy(false,STALE);return}
+      const shift=Math.round((D(date)-D(editing.date))/864e5);
+      plan=targets().map(t=>({from:t.date,date:add(t.date,shift),id:t.id,series:t.series||null}));
+      if(plan.some(p=>p.date!==p.from&&p.date>MAX)){setBusy(false,"That move would push part of the series beyond the planning window.");return}
+    }else{
+      const dates=occurrences(date,rule,until);
+      if(!dates.length){setBusy(false,"That repeat pattern produces no dates in this range.");return}
+      const series=rule?uid():null;plan=dates.map(d=>({date:d,id:uid(),series}));
+    }
+    const moving=new Set(plan.map(p=>p.id)),clashes=[];
+    const single=plan.length===1?await freshDay(plan[0].date):null;
+    for(const p of plan){const hit=(single||itemsOn(p.date)).find(o=>!moving.has(o.id)&&overlaps(o,v));if(hit)clashes.push(`${fmt(p.date,{day:"numeric",month:"short",year:"numeric"})}: ${hit.title} (${hit.start}–${hit.end})`)}
+    if(clashes.length){setBusy(false,`Not saved. ${secById(v.section).name} is already booked:\n${clashes.slice(0,6).join("\n")}${clashes.length>6?`\n…and ${clashes.length-6} more`:""}\nChange the time, section or dates.`);return}
+    const stamp={updatedAt:Date.now(),updatedBy:me};
+    let done=0;
+    /* When shifting a series later, start from the last date so entries are never overwritten mid-move. */
+    if(editing&&date>editing.date)plan.reverse();
+    try{
+      for(const p of plan){
+        if(plan.length>1)$("err").textContent=`Saving ${done+1} of ${plan.length}. Keep this page open.`;else $("err").textContent="Saving…";
+        const rec={...v,series:p.series,...stamp};
+        await writeDay(p.date,{[p.id]:rec});
+        if(p.from&&p.from!==p.date)await writeDay(p.from,{[p.id]:null});
+        done++;
+      }
+    }catch(x){setBusy(false,`${explain(x)}${done?` ${done} of ${plan.length} dates were saved before it stopped.`:""}`);return}
+    cur=clampDate(date);setBusy(false,"");$("dlg").close();render();
+  }catch(x){setBusy(false,explain(x))}
+};
+$("delBtn").onclick=async()=>{
+  if(busy)return;const list=targets();
+  if(!$("delBtn").dataset.armed){$("delBtn").dataset.armed="1";$("delBtn").textContent=list.length>1?`Confirm: delete ${list.length} dates`:"Confirm delete";return}
+  setBusy(true,"Deleting…");let done=0;
+  try{
+    if(!await unchanged()){setBusy(false,STALE);resetDelete();return}
+    for(const t of list){await writeDay(t.date,{[t.id]:null});done++;if(list.length>1)$("err").textContent=`Deleted ${done} of ${list.length}…`}
+    setBusy(false,"");$("dlg").close();
+  }catch(x){setBusy(false,`${explain(x)}${done?` ${done} of ${list.length} were deleted.`:""}`);resetDelete()}
+};
+$("fScope").onchange=()=>{resetDelete();const f=$("fScope").value==="forward";$("err").textContent=f?`This affects ${targets().length} dates. Changing the date moves each one by the same number of days. All of them take the details shown here.`:""};
+$("dupBtn").onclick=()=>{const copy={title:$("fTitle").value,section:$("fSection").value,date:$("fDate").value,start:$("fStart").value,end:$("fEnd").value,who:$("fWho").value,status:$("fStatus").value,notes:$("fNotes").value};$("dlg").close();openBooking(null,copy);$("dlgTitle").textContent="Copy of booking: choose the new date or section"};
+$("fRepeat").onchange=()=>{$("untilWrap").hidden=!$("fRepeat").value;if($("fRepeat").value&&!$("fUntil").value){const u=add($("fDate").value||TODAY,84);$("fUntil").value=u>MAX?MAX:u}};
+$("cancelBtn").onclick=()=>$("dlg").close();
+$("dlg").addEventListener("cancel",e=>{if(busy)e.preventDefault()});
+
+/* ---------- sections ---------- */
+async function saveSection(id,data){
+  $("serr").textContent="";
+  try{const ref=db.doc("config/sections"),s=await retry(()=>ref.get());
+    if(s.exists&&s.data().list)await retry(()=>ref.update({list:{[id]:data}}));
+    else await retry(()=>ref.set({list:{...DEFAULTS,[id]:{...DEFAULTS[id],...data}}}));
+  }catch(e){$("serr").textContent=explain(e)}
+}
+function renderSections(){
+  $("slist").replaceChildren(...sections().map(s=>{
+    const input=el("input",{class:"grow",value:s.name,maxLength:40,disabled:!canWrite,id:"sec-"+s.id,ariaLabel:"Section name"});
+    input.onchange=()=>{const name=input.value.trim();if(name)saveSection(s.id,{name,order:s.order,hidden:!!s.hidden});else input.value=s.name};
+    return el("div",{class:"row",style:"margin-top:8px"},input,el("button",{disabled:!canWrite,onclick:()=>saveSection(s.id,{name:s.name,order:s.order,hidden:!s.hidden})},s.hidden?"Show":"Hide"));
+  }));
+  $("addForm").hidden=!canWrite;
+}
+$("sectionsBtn").onclick=()=>{if(!ready.secs)return;renderSections();$("serr").textContent="";$("sdlg").showModal()};
+$("sclose").onclick=()=>$("sdlg").close();
+$("addForm").onsubmit=async e=>{e.preventDefault();const name=$("newSection").value.trim();if(!name||!canWrite)return;$("newSection").value="";await saveSection("s"+uid(),{name,order:Math.max(...sections().map(s=>s.order))+1,hidden:false})};
+
+/* ---------- navigation ---------- */
+$("newBtn").onclick=()=>openBooking(null);
+$("prev").onclick=()=>{cur=clampDate(view==="day"?add(cur,-1):addMonths(cur,-1));render()};
+$("next").onclick=()=>{cur=clampDate(view==="day"?add(cur,1):addMonths(cur,1));render()};
+$("todayBtn").onclick=()=>{cur=TODAY;render()};
+$("jump").onchange=()=>{if($("jump").value){cur=clampDate($("jump").value);render()}};
+$("search").oninput=()=>{listLimit=200;render()};
+
+function notice(t){$("notice").textContent=t;$("notice").hidden=!t}
+async function start(){
+  render();
+  const use=n=>window.claude?.use?window.claude.use(n):Promise.resolve(null);
+  const[d,u,dl]=await Promise.all([use("db"),use("user"),use("downloads")]);
+  db=d;userApi=u;
+  if(!db){$("sync").textContent="Not connected";notice("The shared calendar isn't available in this view. Sign in to Claude and open the planner from its shared link.");$("view").replaceChildren();return}
+  me=u?await u.id():null;
+  const w=u?await u.can("data.write"):null;canWrite=w!==false;
+  if(!canWrite)notice("You have view-only access. Ask the calendar owner for edit access to add or change bookings.");
+  if(dl){$("exportBtn").hidden=false;$("exportBtn").onclick=async()=>{
+    const q=c=>{let s=String(c??"");if(/^[=+\-@\t\r]/.test(s))s="'"+s;return'"'+s.replace(/"/g,'""')+'"'};
+    const rows=[["Date","Start","End","Section","Title","Booked for","Status","Notes"],...allItems().map(b=>[b.date,b.start,b.end,secById(b.section).name,b.title,b.who,b.status,b.notes])];
+    try{await dl.save({filename:`bookings-${TODAY}.csv`,data:rows.map(r=>r.map(q).join(",")).join("\r\n")})}catch(e){}}}
+  const timer=setTimeout(()=>{$("sync").textContent="Still waiting for the calendar. It may be out of date."},10000);
+  const live=()=>{if(ready.days&&ready.secs){clearTimeout(timer);$("sync").textContent="Live: changes appear for everyone"}};
+  const lost=()=>{clearTimeout(timer);canWrite=false;$("sync").textContent="Disconnected";notice("The connection to the shared calendar stopped. Reload the page to continue.");render()};
+  db.collection("days").where("date",">=",MIN).where("date","<=",MAX).orderBy("date").limit(1000).onSnapshot(s=>{
+    days={};s.docs.forEach(x=>days[x.id]=x.data());if(!s.metadata.fromCache){ready.days=true;live()}render()},lost);
+  db.doc("config/sections").onSnapshot(s=>{
+    secDoc=s.exists?s.data().list:null;if(!s.metadata.fromCache){ready.secs=true;live()}render();
+    if($("sdlg").open&&!$("slist").contains(document.activeElement))renderSections()},lost);
+}
+start();
+</script>
+
+</body></html>
