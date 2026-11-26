@@ -65,7 +65,8 @@ form.f input,form.f select,form.f textarea{width:100%;box-sizing:border-box;font
 </style>
 <div class="wrap">
   <div class="row"><h1>Section Booking Planner</h1><span class="grow"></span>
-
+    <span class="mute" id="sync" role="status">Connecting…</span>
+    <button id="sectionsBtn">Sections</button><button id="exportBtn">Export CSV</button><button class="primary" id="newBtn" enabled>New booking</button></div>
   <div class="notice" id="notice" hidden></div>
   <div class="row bar">
     <div class="row seg" id="views"></div><span class="grow"></span>
@@ -365,7 +366,7 @@ async function start(){
   $("view").replaceChildren(); */
   me=u?await u.id():null; 
   const w=u?await u.can("data.write"):null;canWrite=w!==false;
-  if(!canWrite)notice("You have view-only access. Ask the calendar owner for edit access to add or change bookings.");
+  /* if(!canWrite)notice("You have view-only access. Ask the calendar owner for edit access to add or change bookings."); */
   if(dl){$("exportBtn").hidden=false;$("exportBtn").onclick=async()=>{
     const q=c=>{let s=String(c??"");if(/^[=+\-@\t\r]/.test(s))s="'"+s;return'"'+s.replace(/"/g,'""')+'"'};
     const rows=[["Date","Start","End","Section","Title","Booked for","Status","Notes"],...allItems().map(b=>[b.date,b.start,b.end,secById(b.section).name,b.title,b.who,b.status,b.notes])];
