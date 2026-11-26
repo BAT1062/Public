@@ -362,7 +362,7 @@ async function start(){
   db=d;
   userApi=u;
   /* if(!db){$("sync").textContent="Not connected";notice("The shared calendar isn't available in this view. Sign in to Claude and open the planner from its shared link.");$("view").replaceChildren();return}*/
-  $("view").replaceChildren();
+  /* $("view").replaceChildren(); */
   /* me=u?await u.id():null; */
   const w=u?await u.can("data.write"):null;canWrite=w!==false;
   if(!canWrite)notice("You have view-only access. Ask the calendar owner for edit access to add or change bookings.");
