@@ -357,12 +357,12 @@ $("search").oninput=()=>{listLimit=200;render()};
 function notice(t){$("notice").textContent=t;$("notice").hidden=!t}
 async function start(){
   render();
-  /* const use=n=>window.claude?.use?window.claude.use(n):Promise.resolve(null);
+  const use=n=>window.claude?.use?window.claude.use(n):Promise.resolve(null);
   const[d,u,dl]=await Promise.all([use("db"),use("user"),use("downloads")]);
-  /*db=d;
+  db=d;
   userApi=u;
   /* if(!db){$("sync").textContent="Not connected";notice("The shared calendar isn't available in this view. Sign in to Claude and open the planner from its shared link.");$("view").replaceChildren();return}
-  me=u?await u.id():null;
+  me=u?await u.id():null; */
   const w=u?await u.can("data.write"):null;canWrite=w!==false;
   if(!canWrite)notice("You have view-only access. Ask the calendar owner for edit access to add or change bookings.");
   if(dl){$("exportBtn").hidden=false;$("exportBtn").onclick=async()=>{
