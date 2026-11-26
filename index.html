@@ -165,7 +165,7 @@ const explain=e=>e&&e.code==="quota_exceeded"?"The calendar's storage is full. D
 /* ---------- rendering ---------- */
 function render(){
   /* if(!ready.days||!ready.secs){$("view").replaceChildren(el("p",{class:"mute"},"Loading bookings…"));} */
-  $("view").replaceChildren(el("p",{class:"mute"};
+  /* $("view").replaceChildren(el("p",{class:"mute"};*/ 
   $("views").replaceChildren(...[["day","Day"],["month","Month"],["year","Year ahead"],["list","List"]].map(([k,l])=>el("button",{ariaPressed:String(view===k),onclick:()=>{view=k;try{localStorage.setItem("view",k)}catch(e){}render()}},l)));
   $("filters").replaceChildren(...activeSections().map(s=>el("button",{class:"chip",style:`--c:${colour(s)}`,ariaPressed:String(!hidden.has(s.id)),onclick:()=>{hidden.has(s.id)?hidden.delete(s.id):hidden.add(s.id);render()}},el("i"),s.name)));
   $("newBtn").disabled=!(canWrite&&ready.days&&ready.secs&&activeSections().length);
