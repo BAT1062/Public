@@ -1,6 +1,6 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Section Booking Planner</title>
-/* <meta name="claude:viewport-fit-sides" content="cover"> */ 
+<meta name="claude:viewport-fit-sides" content="cover"> 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap">
 <style>
 /* layout: toolbar over one view at a time: day board (sections x hours), month grid, year at a glance, list */
@@ -165,7 +165,7 @@ const explain=e=>e&&e.code==="quota_exceeded"?"The calendar's storage is full. D
 /* ---------- rendering ---------- */
 function render(){
   /* if(!ready.days||!ready.secs){$("view").replaceChildren(el("p",{class:"mute"},"Loading bookings…"));} */
-  $("view").replaceChildren(el("p",{class:"mute"}
+  $("view").replaceChildren(el("p",{class:"mute"};
   $("views").replaceChildren(...[["day","Day"],["month","Month"],["year","Year ahead"],["list","List"]].map(([k,l])=>el("button",{ariaPressed:String(view===k),onclick:()=>{view=k;try{localStorage.setItem("view",k)}catch(e){}render()}},l)));
   $("filters").replaceChildren(...activeSections().map(s=>el("button",{class:"chip",style:`--c:${colour(s)}`,ariaPressed:String(!hidden.has(s.id)),onclick:()=>{hidden.has(s.id)?hidden.delete(s.id):hidden.add(s.id);render()}},el("i"),s.name)));
   $("newBtn").disabled=!(canWrite&&ready.days&&ready.secs&&activeSections().length);
